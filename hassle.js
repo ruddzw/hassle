@@ -13,13 +13,18 @@ function HassleSelector(selectorStr) {
         var possibleSel = this.possibles[i];
         var reqs = new Requirement(possibleSel);
         
-        if (!possibleSel.match(/^\w*((#\w+)|(\.\w+))*$/)) {
+        if (!possibleSel.match(/^(\*|(\w+))?((#\w+)|(\.\w+))*$/)) {
             throw "Unrecognized selector " + possibleSel;
         }
         
         var possible = possibleSel;
         while (possible.length > 0) {
             var currentMatch;
+            
+            if (currentMatch = possible.match(/^(\*)/)) {
+                reqs.all = currentMatch[1];
+                possible = possible.substr(currentMatch[1].length);
+            }
 
             if (currentMatch = possible.match(/^(\w+)/)) {
                 reqs.tagName = currentMatch[1];
@@ -46,6 +51,9 @@ HassleSelector.prototype.selectorForNode = function(node) {
     return new HassleSelector(this.str);
 };
 HassleSelector.prototype.includesElem = function(elem) {
+    if (elem.nodeType !== Node.ELEMENT_NODE) {
+        return false;
+    }
     for (var i in this.possibles) {
         var possible = this.possibles[i];
         var matches = true;
@@ -73,9 +81,6 @@ HassleSelector.prototype.includesElem = function(elem) {
             } else {
                 matches = false;
             }
-        }
-        if (!possible.tagName && !possible.ids && !possible.classes) {
-            matches = false;
         }
         if (matches) {
             return true;
