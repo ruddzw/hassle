@@ -7,7 +7,7 @@ HassleRequirements.prototype.toString = function() {
 };
 HassleRequirements.prototype.init = function() {
     
-    if (!this.selector.match(new RegExp("^(" + this.selectorRegExp.source + "\\s*>\\s*)*" + this.selectorRegExp.source + "$"))) {
+    if (!this.selector.match(new RegExp("^(" + this.selectorRegExp.source + "\\s*(>|\\s)\\s*)*" + this.selectorRegExp.source + "$"))) {
         throw "Unrecognized selector " + this.selector;
     }
     
@@ -40,12 +40,20 @@ HassleRequirements.prototype.init = function() {
             selectorToGo = selectorToGo.substr(currentMatch[1].length);
             this.child = new HassleRequirements(selectorToGo);
             this.child.init();
+            this.child.isChild = true;
+            break;
+        }
+        
+        if (currentMatch = selectorToGo.match(/^(\s+)(\w|\.|#)/)) {
+            selectorToGo = selectorToGo.substr(currentMatch[1].length);
+            this.descendant = new HassleRequirements(selectorToGo);
+            this.descendant.init();
             break;
         }
     }
 };
 HassleRequirements.prototype.toBeSelected = function() {
-    if (this.child) {
+    if (this.child || this.descendant) {
         return false;
     } else {
         return true;
@@ -53,6 +61,9 @@ HassleRequirements.prototype.toBeSelected = function() {
 }
 HassleRequirements.prototype.matchesElem = function(elem) {
     if (elem.nodeType !== Node.ELEMENT_NODE) {
+        return false;
+    }
+    if (this.donotmatch) {
         return false;
     }
     if (this.all) {
@@ -88,21 +99,29 @@ HassleRequirements.prototype.matchesElem = function(elem) {
     }
     return true;
 };
-function HassleSelector(selectorStr) {
-    this.selectorStr = selectorStr.toLowerCase();
-    
-    this.requirements = this.selectorStr.split(/\s*,\s*/);
+function HassleSelector() {
+    this.requirements = [];
+};
+HassleSelector.prototype.makeRequirementsFromSelector = function(selectorStr) {
+    this.requirements = selectorStr.split(/\s*,\s*/);
     for (var i=0, len=this.requirements.length;i<len;i++) {
         this.requirements[i] = new HassleRequirements(this.requirements[i]);
         this.requirements[i].init();
     }
-}
+};
 HassleSelector.prototype.updatedSelectorForChildrenOf = function(node) {
-    var newSelector = new HassleSelector(this.selectorStr);
+    var newSelector = new HassleSelector();
     for (var i in this.requirements) {
         var requirement = this.requirements[i];
+        if (requirement.isChild && !requirement.matchesElem(node)) {
+            requirement.donotmatch = true;
+        }
         if (requirement.child && requirement.matchesElem(node)) {
             newSelector.requirements[i] = requirement.child;
+        } else if (requirement.descendant && requirement.matchesElem(node)) {
+            newSelector.requirements[i] = requirement.descendant;
+        } else {
+            newSelector.requirements[i] = requirement;
         }
     }
     return newSelector;
@@ -123,7 +142,8 @@ var hassle = function(selector, element) {
     }
     element = element || document;
     
-    var hassleSelector = new HassleSelector(selector);
+    var hassleSelector = new HassleSelector();
+    hassleSelector.makeRequirementsFromSelector(selector);
     
     (function(curSelector, curElem, depth) {
         if (curSelector.includesElem(curElem)) {
