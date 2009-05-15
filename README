@@ -10,4 +10,6 @@ tag names
 comma separation
 #id
 .class
+contextual selectors
+> children
 any combination of the above!
