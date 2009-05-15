@@ -1,7 +1,7 @@
 function HassleRequirements(selector) {
     this.selector = selector.replace(/^\s+/, "").replace(/\s+$/, "");
 };
-HassleRequirements.prototype.selectorRegExp = /(\*|(\w+))?((#\w+)|(\.\w+))*/;
+HassleRequirements.prototype.selectorRegExp = /(\*|(\w+))?((#\w+)|(\.\w+))*(\[\w+\])*/;
 HassleRequirements.prototype.toString = function() {
     return "[HassleRequirements matching " + this.selector + "]";
 };
@@ -40,7 +40,7 @@ HassleRequirements.prototype.init = function() {
             selectorToGo = selectorToGo.substr(currentMatch[1].length);
             this.child = new HassleRequirements(selectorToGo);
             this.child.init();
-            this.child.isChild = true;
+            this.child.expires = true;
             break;
         }
         
@@ -49,6 +49,12 @@ HassleRequirements.prototype.init = function() {
             this.descendant = new HassleRequirements(selectorToGo);
             this.descendant.init();
             break;
+        }
+        
+        if (currentMatch = selectorToGo.match(/^\[(\w+)\]/)) {
+            this.attrExists = this.attrExists || [];
+            this.attrExists.push(currentMatch[1]);
+            selectorToGo = selectorToGo.substr(currentMatch[1].length+2);
         }
     }
 };
@@ -97,6 +103,13 @@ HassleRequirements.prototype.matchesElem = function(elem) {
             return false;
         }
     }
+    if (this.attrExists) {
+        for (var attrExistsIndex in this.attrExists) {
+            if (!elem.hasAttribute(this.attrExists[attrExistsIndex])) {
+                return false;
+            }
+        }
+    }
     return true;
 };
 function HassleSelector() {
@@ -113,16 +126,17 @@ HassleSelector.prototype.updatedSelectorForChildrenOf = function(node) {
     var newSelector = new HassleSelector();
     for (var i in this.requirements) {
         var requirement = this.requirements[i];
-        if (requirement.isChild && !requirement.matchesElem(node)) {
-            requirement.donotmatch = true;
+        if (!requirement.expires) {
+            newSelector.requirements.push(requirement);
         }
         if (requirement.child && requirement.matchesElem(node)) {
-            newSelector.requirements[i] = requirement.child;
+            newSelector.requirements.push(requirement.child);
         } else if (requirement.descendant && requirement.matchesElem(node)) {
-            newSelector.requirements[i] = requirement.descendant;
-        } else {
-            newSelector.requirements[i] = requirement;
+            newSelector.requirements.push(requirement.descendant);
         }
+        /*if (requirement.isChild && !requirement.matchesElem(node)) {
+            newSelector.requirements[i].donotmatch = true;
+        }*/
     }
     return newSelector;
 };

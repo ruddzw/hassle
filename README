@@ -25,3 +25,7 @@ ancestor descendant
 	Matches all descendant elements specified by "descendant" of elements specified by "ancestor"
 parent > child
 	Matches all child elements specified by "child" of elements specified by "parent"
+
+===Attribute Filters======
+[attribute]
+	Matches elements that have the specified attribute

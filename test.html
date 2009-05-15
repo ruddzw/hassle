@@ -7,10 +7,20 @@
 	<title>hassle test page</title>
 	<script type="text/javascript" src="hassle.js"></script>
 	<script type="text/javascript">
+	function highlight(selector) {
+	  var every = hassle("*");
+	  for (var i in every) {
+	    every[i].style.backgroundColor = "transparent";
+	  }
+	  var arr = hassle(selector);
+	  for (var j in arr) {
+	    arr[j].style.backgroundColor = "#fef68e";
+	  }
+	}
 	window.onload = function() {
-	  var arr = hassle("body h1");
-    for (i in arr) {
-      arr[i].style.backgroundColor = "#fef68e";
+	  var arr = hassle("body > p");
+    for (var k in arr) {
+      arr[k].style.backgroundColor = "#fef68e";
     }
   }
 	</script>
@@ -22,5 +32,6 @@
   <p id="hello">p with id of hello</p>
   <p id="omg" class="lol">p with id of omg and class of lol</p>
   <p class="lol">p with class of lol</p>
+  <div><p class="indiv">p in a div</p></div>
 </body>
 </html>
