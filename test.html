@@ -8,7 +8,7 @@
 	<script type="text/javascript" src="hassle.js"></script>
 	<script type="text/javascript">
 	window.onload = function() {
-	  var arr = hassle("h1, #omg, .lol");
+	  var arr = hassle("body > h1");
     for (i in arr) {
       arr[i].style.backgroundColor = "#fef68e";
     }
@@ -16,10 +16,11 @@
 	</script>
 </head>
 <body>
-  <h1>blah</h1>
-  <h2>bluh</h2>
-  <p id="hello">Oh no</p>
-  <p id="omg" class="bbq">omg</p>
-  <p class="lol">lol</p>
+  <h1>an h1</h1>
+  <div><h1>an h1 in a div</h1></div>
+  <h2>an h2</h2>
+  <p id="hello">p with id of hello</p>
+  <p id="omg" class="lol">p with id of omg and class of lol</p>
+  <p class="lol">p with class of lol</p>
 </body>
 </html>

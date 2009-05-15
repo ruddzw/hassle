@@ -1,88 +1,115 @@
-function HassleSelector(selectorStr) {
-    this.str = selectorStr.toLowerCase();
-    this.possibles = this.str.split(/\s*,\s*/);
+function HassleRequirements(selector) {
+    this.selector = selector.replace(/^\s+/, "").replace(/\s+$/, "");
+};
+HassleRequirements.prototype.selectorRegExp = /(\*|(\w+))?((#\w+)|(\.\w+))*/;
+HassleRequirements.prototype.toString = function() {
+    return "[HassleRequirements matching " + this.selector + "]";
+};
+HassleRequirements.prototype.init = function() {
     
-    var Requirement = function(selector) {
-        this.selector = selector;
-    };
-    Requirement.prototype.toString = function() {
-        return "[Requirement object: match " + this.selector + "]";
-    };
+    if (!this.selector.match(new RegExp("^(" + this.selectorRegExp.source + "\\s*>\\s*)*" + this.selectorRegExp.source + "$"))) {
+        throw "Unrecognized selector " + this.selector;
+    }
     
-    for (var i=0, len=this.possibles.length;i<len;i++) {
-        var possibleSel = this.possibles[i];
-        var reqs = new Requirement(possibleSel);
-        
-        if (!possibleSel.match(/^(\*|(\w+))?((#\w+)|(\.\w+))*$/)) {
-            throw "Unrecognized selector " + possibleSel;
+    var selectorToGo = this.selector;
+    while(selectorToGo.length > 0) {
+        var currentMatch;
+        if (currentMatch = selectorToGo.match(/^(\*)/)) {
+            this.all = true;
+            selectorToGo = selectorToGo.substr(currentMatch[1].length);
         }
         
-        var possible = possibleSel;
-        while (possible.length > 0) {
-            var currentMatch;
-            
-            if (currentMatch = possible.match(/^(\*)/)) {
-                reqs.all = currentMatch[1];
-                possible = possible.substr(currentMatch[1].length);
-            }
-
-            if (currentMatch = possible.match(/^(\w+)/)) {
-                reqs.tagName = currentMatch[1];
-                possible = possible.substr(currentMatch[1].length);
-            }
-            
-            if (currentMatch = possible.match(/^#(\w+)/)) {
-                reqs.ids = reqs.ids || [];
-                reqs.ids.push(currentMatch[1]);
-                possible = possible.substr(currentMatch[1].length+1);
-            }
-            
-            if (currentMatch = possible.match(/^\.(\w+)/)) {
-                reqs.classes = reqs.classes || [];
-                reqs.classes.push(currentMatch[1]);
-                possible = possible.substr(currentMatch[1].length+1);
-            }
+        if (currentMatch = selectorToGo.match(/^(\w+)/)) {
+            this.tagName = currentMatch[1];
+            selectorToGo = selectorToGo.substr(currentMatch[1].length);
         }
         
-        this.possibles[i] = reqs;
+        if (currentMatch = selectorToGo.match(/^#(\w+)/)) {
+            this.ids = this.ids || [];
+            this.ids.push(currentMatch[1]);
+            selectorToGo = selectorToGo.substr(currentMatch[1].length+1);
+        }
+        
+        if (currentMatch = selectorToGo.match(/^\.(\w+)/)) {
+            this.classes = this.classes || [];
+            this.classes.push(currentMatch[1]);
+            selectorToGo = selectorToGo.substr(currentMatch[1].length+1);
+        }
+        
+        if (currentMatch = selectorToGo.match(/^(\s*>\s*)/)) {
+            selectorToGo = selectorToGo.substr(currentMatch[1].length);
+            this.child = new HassleRequirements(selectorToGo);
+            this.child.init();
+            break;
+        }
+    }
+};
+HassleRequirements.prototype.toBeSelected = function() {
+    if (this.child) {
+        return false;
+    } else {
+        return true;
     }
 }
-HassleSelector.prototype.selectorForNode = function(node) {
-    return new HassleSelector(this.str);
-};
-HassleSelector.prototype.includesElem = function(elem) {
+HassleRequirements.prototype.matchesElem = function(elem) {
     if (elem.nodeType !== Node.ELEMENT_NODE) {
         return false;
     }
-    for (var i in this.possibles) {
-        var possible = this.possibles[i];
-        var matches = true;
-        if (possible.tagName && possible.tagName!==elem.nodeName.toLowerCase()) {
-            matches = false;
-        }
-        if (possible.ids) {
-            for (var idIndex in possible.ids) {
-                if (possible.ids[idIndex]!==elem.id) {
-                    matches = false;
-                }
+    if (this.all) {
+        return true;
+    }
+    if (this.tagName && this.tagName!==elem.nodeName.toLowerCase()) {
+        return false;
+    }
+    if (this.ids) {
+        for (var idIndex in this.ids) {
+            if (this.ids[idIndex]!==elem.id) {
+                return false;
             }
         }
-        if (possible.classes) {
-            if (elem.className) {
-                var classes = elem.className.split(/\s+/);
-                matches = false; // temporarily set matches to false
-                for (var classNameIndex in classes) {
-                    for (var classIndex in possible.classes) {
-                        if (possible.classes[classIndex]===classes[classNameIndex]) {
-                            matches = true; // set matches back to true if it matches a class
-                        }
+    }
+    if (this.classes) {
+        if (elem.className) {
+            var classes = elem.className.split(/\s+/);
+            var matchesAtLeastOneClass = false;
+            for (var classNameIndex in classes) {
+                for (var classIndex in this.classes) {
+                    if (this.classes[classIndex]===classes[classNameIndex]) {
+                        matchesAtLeastOneClass = true;
                     }
                 }
-            } else {
-                matches = false;
             }
+            if (!matchesAtLeastOneClass) {
+                return false;
+            }
+        } else {
+            return false;
         }
-        if (matches) {
+    }
+    return true;
+};
+function HassleSelector(selectorStr) {
+    this.selectorStr = selectorStr.toLowerCase();
+    
+    this.requirements = this.selectorStr.split(/\s*,\s*/);
+    for (var i=0, len=this.requirements.length;i<len;i++) {
+        this.requirements[i] = new HassleRequirements(this.requirements[i]);
+        this.requirements[i].init();
+    }
+}
+HassleSelector.prototype.updatedSelectorForChildrenOf = function(node) {
+    var newSelector = new HassleSelector(this.selectorStr);
+    for (var i in this.requirements) {
+        var requirement = this.requirements[i];
+        if (requirement.child && requirement.matchesElem(node)) {
+            newSelector.requirements[i] = requirement.child;
+        }
+    }
+    return newSelector;
+};
+HassleSelector.prototype.includesElem = function(elem) {
+    for (var i in this.requirements) {
+        if(this.requirements[i].toBeSelected() && this.requirements[i].matchesElem(elem)) {
             return true;
         }
     }
@@ -102,9 +129,10 @@ var hassle = function(selector, element) {
         if (curSelector.includesElem(curElem)) {
             sel.push(curElem);
         }
+        var newSelector = curSelector.updatedSelectorForChildrenOf(curElem);
         for (var i=0, child;child=curElem.childNodes[i];i++) {
             if (child.nodeType===Node.ELEMENT_NODE) {
-                arguments.callee(curSelector, child, depth+1);
+                arguments.callee(newSelector, child, depth+1);
             }
         }
     })(hassleSelector, element, 0);
