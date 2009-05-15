@@ -1,13 +1,14 @@
 function HassleRequirements(selector) {
     this.selector = selector.replace(/^\s+/, "").replace(/\s+$/, "");
 };
-HassleRequirements.prototype.selectorRegExp = /(\*|(\w+))?((#\w+)|(\.\w+))*(\[\w+\])*/;
+HassleRequirements.prototype.selectorRegExp = /(\*|(\w+))?((#\w+)|(\.\w+))*(\[\w+(!?=\w+)?\])*/;
 HassleRequirements.prototype.toString = function() {
     return "[HassleRequirements matching " + this.selector + "]";
 };
 HassleRequirements.prototype.init = function() {
     
-    if (!this.selector.match(new RegExp("^(" + this.selectorRegExp.source + "\\s*(>|\\s)\\s*)*" + this.selectorRegExp.source + "$"))) {
+    if (!this.selector.match(new RegExp("^(" + this.selectorRegExp.source +
+            "\\s*(>|\\s)\\s*)*" + this.selectorRegExp.source + "$"))) {
         throw "Unrecognized selector " + this.selector;
     }
     
@@ -55,6 +56,18 @@ HassleRequirements.prototype.init = function() {
             this.attrExists = this.attrExists || [];
             this.attrExists.push(currentMatch[1]);
             selectorToGo = selectorToGo.substr(currentMatch[1].length+2);
+        }
+        
+        if (currentMatch = selectorToGo.match(/^\[(\w+)=(\w+)\]/)) {
+            this.attrEquals = this.attrEquals || [];
+            this.attrEquals.push({name: currentMatch[1], value: currentMatch[2]});
+            selectorToGo = selectorToGo.substr(currentMatch[1].length+currentMatch[2].length+3);
+        }
+        
+        if (currentMatch = selectorToGo.match(/^\[(\w+)!=(\w+)\]/)) {
+            this.attrNotEquals = this.attrNotEquals || [];
+            this.attrNotEquals.push({name: currentMatch[1], value: currentMatch[2]});
+            selectorToGo = selectorToGo.substr(currentMatch[1].length+currentMatch[2].length+4);
         }
     }
 };
@@ -107,6 +120,27 @@ HassleRequirements.prototype.matchesElem = function(elem) {
         for (var attrExistsIndex in this.attrExists) {
             if (!elem.hasAttribute(this.attrExists[attrExistsIndex])) {
                 return false;
+            }
+        }
+    }
+    if (this.attrEquals) {
+        for (var attrEqualsIndex in this.attrEquals) {
+            if (!elem.hasAttribute(this.attrEquals[attrEqualsIndex].name)) {
+                return false;
+            }
+            if (elem.getAttribute(this.attrEquals[attrEqualsIndex].name) !==
+                    (this.attrEquals[attrEqualsIndex].value)) {
+                return false;
+            }
+        }
+    }
+    if (this.attrNotEquals) {
+        for (var attrNotEqualsIndex in this.attrNotEquals) {
+            if (elem.hasAttribute(this.attrNotEquals[attrNotEqualsIndex].name)) {
+                if (elem.getAttribute(this.attrNotEquals[attrNotEqualsIndex].name) ===
+                        (this.attrNotEquals[attrNotEqualsIndex].value)) {
+                    return false;
+                }
             }
         }
     }

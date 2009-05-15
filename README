@@ -29,3 +29,7 @@ parent > child
 ===Attribute Filters======
 [attribute]
 	Matches elements that have the specified attribute
+[attribute=value]
+	Matches elements that have the specified attribute with a certain value
+[attribute!=value]
+	Matches elements that either don't have the specified attribute or do have the specified attribute but not with a certain value	
