@@ -6,10 +6,22 @@ and you'll get back an array of matching elements!
 You can also call hassle(element) to get an array containing that element, or hassle("selector", element) to only find elements in that element's subtree
 
 Current selectors supported:
-tag names
-comma separation
+===Basics======
 #id
+	Matches a single element with the given id attribute
+element
+	Matches all elements with the given name
 .class
-contextual selectors
-> children
-any combination of the above!
+	Matches all elements with the given class
+.class1.class2
+	Matches all elements with all the given classes
+*
+	Matches all elements
+selector1, selector2, selectorN
+	Matches the combined results of all the specified selectors
+
+===Hierarchy======
+ancestor descendant
+	Matches all descendant elements specified by "descendant" of elements specified by "ancestor"
+parent > child
+	Matches all child elements specified by "child" of elements specified by "parent"
