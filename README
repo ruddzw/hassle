@@ -1,0 +1,13 @@
+A learning implementation of a CSS selector engine. It will work in Firefox 3 and Safari so far, not sure about anything else.
+
+Just call:
+hassle("selector")
+and you'll get back an array of matching elements!
+You can also call hassle(element) to get an array containing that element, or hassle("selector", element) to only find elements in that element's subtree
+
+Current selectors supported:
+tag names
+comma separation
+#id
+.class
+any combination of the above!
