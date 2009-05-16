@@ -18,7 +18,7 @@
 	  }
 	}
 	window.onload = function() {
-	  var arr = hassle("body > p");
+	  var arr = hassle("[class*=lol]");
     for (var k in arr) {
       arr[k].style.backgroundColor = "#fef68e";
     }
@@ -28,10 +28,10 @@
 <body>
   <h1>an h1</h1>
   <div><h1>an h1 in a div</h1></div>
-  <h2>an h2</h2>
+  <h2 class="lol">an h2 with class of lol</h2>
   <p id="hello">p with id of hello</p>
   <p id="omg" class="lol">p with id of omg and class of lol</p>
-  <p class="lol">p with class of lol</p>
+  <p class="nolol">p with class of nolol</p>
   <div><p class="indiv">p in a div</p></div>
 </body>
 </html>

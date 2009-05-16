@@ -1,7 +1,7 @@
 function HassleRequirements(selector) {
     this.selector = selector.replace(/^\s+/, "").replace(/\s+$/, "");
 };
-HassleRequirements.prototype.selectorRegExp = /(\*|(\w+))?((#\w+)|(\.\w+))*(\[\w+(!?=\w+)?\])*/;
+HassleRequirements.prototype.selectorRegExp = /(\*|(\w+))?((#\w+)|(\.\w+))*(\[\w+((!|\^|\$|\*)?=\w+)?\])*/;
 HassleRequirements.prototype.toString = function() {
     return "[HassleRequirements matching " + this.selector + "]";
 };
@@ -67,6 +67,24 @@ HassleRequirements.prototype.init = function() {
         if (currentMatch = selectorToGo.match(/^\[(\w+)!=(\w+)\]/)) {
             this.attrNotEquals = this.attrNotEquals || [];
             this.attrNotEquals.push({name: currentMatch[1], value: currentMatch[2]});
+            selectorToGo = selectorToGo.substr(currentMatch[1].length+currentMatch[2].length+4);
+        }
+        
+        if (currentMatch = selectorToGo.match(/^\[(\w+)\^=(\w+)\]/)) {
+            this.attrStartsWiths = this.attrStartsWiths || [];
+            this.attrStartsWiths.push({name: currentMatch[1], value: currentMatch[2]});
+            selectorToGo = selectorToGo.substr(currentMatch[1].length+currentMatch[2].length+4);
+        }
+        
+        if (currentMatch = selectorToGo.match(/^\[(\w+)\$=(\w+)\]/)) {
+            this.attrEndsWiths = this.attrEndsWiths || [];
+            this.attrEndsWiths.push({name: currentMatch[1], value: currentMatch[2]});
+            selectorToGo = selectorToGo.substr(currentMatch[1].length+currentMatch[2].length+4);
+        }
+        
+        if (currentMatch = selectorToGo.match(/^\[(\w+)\*=(\w+)\]/)) {
+            this.attrContains = this.attrContains || [];
+            this.attrContains.push({name: currentMatch[1], value: currentMatch[2]});
             selectorToGo = selectorToGo.substr(currentMatch[1].length+currentMatch[2].length+4);
         }
     }
@@ -141,6 +159,42 @@ HassleRequirements.prototype.matchesElem = function(elem) {
                         (this.attrNotEquals[attrNotEqualsIndex].value)) {
                     return false;
                 }
+            }
+        }
+    }
+    if(this.attrStartsWiths) {
+        for (var attrStartsWithIndex in this.attrStartsWiths) {
+            var name = this.attrStartsWiths[attrStartsWithIndex].name;
+            var value = this.attrStartsWiths[attrStartsWithIndex].value;
+            if (!elem.hasAttribute(name)) {
+                return false;
+            }
+            if (!elem.getAttribute(name).match(new RegExp("^" + value))) {
+                return false;
+            }
+        }
+    }
+    if(this.attrEndsWiths) {
+        for (var attrEndsWithIndex in this.attrEndsWiths) {
+            var name = this.attrEndsWiths[attrEndsWithIndex].name;
+            var value = this.attrEndsWiths[attrEndsWithIndex].value;
+            if (!elem.hasAttribute(name)) {
+                return false;
+            }
+            if (!elem.getAttribute(name).match(new RegExp(value + "$"))) {
+                return false;
+            }
+        }
+    }
+    if(this.attrContains) {
+        for (var attrContainsIndex in this.attrContains) {
+            var name = this.attrContains[attrContainsIndex].name;
+            var value = this.attrContains[attrContainsIndex].value;
+            if (!elem.hasAttribute(name)) {
+                return false;
+            }
+            if (!elem.getAttribute(name).match(new RegExp(value))) {
+                return false;
             }
         }
     }
